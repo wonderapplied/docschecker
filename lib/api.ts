@@ -20,3 +20,15 @@ export function errorResponse(err: unknown) {
   console.error(err);
   return NextResponse.json({ error: "Something went wrong" }, { status: 500 });
 }
+
+/** The browser's IANA time zone, used for day-based streaks. */
+export function timeZoneOf(body: unknown): string {
+  const tz = (body as { tz?: unknown } | null)?.tz;
+  if (typeof tz !== "string" || tz.length > 64) return "UTC";
+  try {
+    new Intl.DateTimeFormat("en", { timeZone: tz });
+    return tz;
+  } catch {
+    return "UTC";
+  }
+}

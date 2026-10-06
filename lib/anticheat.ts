@@ -1,23 +1,25 @@
 // Checks that run on every poll. Deletions need no check: progress is a net count, so typing
 // and deleting earns nothing.
 
-export const PASTE_WORDS_PER_MINUTE = 300;
+/** A jump has to be at least this many words to count as a paste. */
+export const PASTE_MIN_WORDS = 50;
+/** ...and faster than this. Fast typists sustain ~80 wpm while composing; 120 leaves headroom. */
+export const PASTE_WPM = 120;
 const JUNK_MIN_WORDS = 50;
 const LOREM = new Set([
   "lorem", "ipsum", "dolor", "sit", "amet", "consectetur", "adipiscing", "elit", "sed", "eiusmod",
   "tempor", "incididunt", "labore", "dolore", "magna", "aliqua",
 ]);
 
-export type Flag = "pasted" | "repetitive" | "lorem";
+export type Flag = "repetitive" | "lorem";
 
 /**
- * A jump of 300+ words in one poll looks like a paste. Polls are ~45s apart while the tab is
- * open; if the gap was longer (laptop asleep, tab closed) the threshold scales so a long
- * honest stretch isn't flagged.
+ * Words that arrived faster than anyone types are treated as pasted and don't count. Polls are
+ * ~45s apart while the tab is open; after a longer gap (laptop asleep) the allowance grows with it.
  */
 export function isPaste(wordDelta: number, secondsSinceLastPoll: number): boolean {
-  const minutes = Math.max(1, secondsSinceLastPoll / 60);
-  return wordDelta >= PASTE_WORDS_PER_MINUTE * minutes;
+  const minutes = Math.max(20, secondsSinceLastPoll) / 60;
+  return wordDelta >= PASTE_MIN_WORDS && wordDelta > PASTE_WPM * minutes;
 }
 
 /** Words present now but not at the baseline, as a frequency map. */
@@ -33,7 +35,7 @@ export function addedWords(
   return added;
 }
 
-/** "the the the" and lorem ipsum checks over the words added this session. */
+/** "the the the" and lorem ipsum checks over the words added this session. Shown to the writer only. */
 export function junkFlags(added: Record<string, number>): Flag[] {
   const total = Object.values(added).reduce((a, b) => a + b, 0);
   if (total < JUNK_MIN_WORDS) return [];

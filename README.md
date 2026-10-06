@@ -20,16 +20,20 @@ Next.js 16 + Tailwind 4 · Auth.js (Google) · Google Docs API + Picker (`drive.
 - **Polling:** the dashboard polls `/api/session/poll` every 45s while the tab is open. The server
   ignores polls less than 20s apart. Each poll stores a snapshot for the words-per-minute graph.
 - **Anti-cheat** (`lib/anticheat.ts`):
-  - *Paste:* +300 words in one poll (scaled up when polls were far apart) flags `pasted?`.
-    With `PASTE_MODE=discount`, those words also stop counting.
-  - *Junk:* over the words *added* this session, a unique/total ratio under 0.3 or one word over 20% flags
-    `repetitive`, and more than 10% lorem-ipsum vocabulary flags `lorem`.
+  - *Paste:* a jump of 50+ words faster than 120 words/minute (the allowance grows with the gap
+    between checks) doesn't count. The writer sees "Pasted 300 words, not counted"; friends only see the count.
+  - *Junk:* over the words *added* this session, a unique/total ratio under 0.3 or one word over 20%,
+    or more than 10% lorem-ipsum vocabulary, shows a note to the writer only.
 - **Lobby:** the server writes a `lobby_status` row (numbers only, plus the doc title if you opt in).
   The browser subscribes over Supabase Realtime with a short-lived JWT minted by
-  `/api/realtime-token`, and RLS limits rows to you and your friends.
-- **Unlock:** when you first hit the goal, `unlocked_at` is set, friends in the lobby get a toast and
-  a browser notification, and the Discord webhook posts "**Name** is free, hop on." (it @mentions you
-  if you've saved your Discord ID on /friends).
+  `/api/realtime-token`, and RLS limits rows to you and your friends. A writing card with no update
+  for 2.5 minutes shows as Paused (the writer's tab is closed or hidden).
+- **Unlock:** when you first hit the goal, `unlocked_at` is set, you get a full-screen celebration
+  (time taken, streak, personal best), friends get a lobby banner with a Ping button, and your ping
+  channel gets "@you unlocked in 1h 12m and is free. Hop on."
+- **Discord:** "Connect Discord" (OAuth, `identify` scope) stores your Discord ID so pings @mention
+  you. Each person sets a ping channel (a channel webhook URL) on /friends; `DISCORD_WEBHOOK_URL` is
+  the fallback.
 
 ## Setup
 
@@ -44,12 +48,17 @@ Next.js 16 + Tailwind 4 · Auth.js (Google) · Google Docs API + Picker (`drive.
 5. Note the **project number** (Dashboard → Project info). This is the Picker app ID.
 
 ### 2. Supabase
-1. Create a project and run `supabase/schema.sql` in the SQL editor.
+1. Create a project and run `supabase/schema.sql` in the SQL editor. It's safe to re-run; the
+   end of the file adds the columns introduced after the first version.
 2. Copy the project URL, the anon key, the service role key, and the **legacy JWT secret**
    (Project Settings → JWT Keys). The legacy secret signs the lobby's Realtime tokens.
 
 ### 3. Discord (optional)
-In your server, open Channel → Edit → Integrations → Webhooks → New Webhook and copy the URL.
+1. Ping channel: in your server, open Channel → Edit → Integrations → Webhooks → New Webhook and copy
+   the URL. Paste it on /friends (or set `DISCORD_WEBHOOK_URL` as a site-wide fallback).
+2. Connect Discord button: create an app in the Discord Developer Portal, add the redirect
+   `<NEXT_PUBLIC_SITE_URL>/api/discord/callback` under OAuth2, and set `DISCORD_CLIENT_ID` and
+   `DISCORD_CLIENT_SECRET`.
 
 ### 4. Run
 ```bash
@@ -63,17 +72,17 @@ Push to Vercel, add the same env vars, and set `NEXT_PUBLIC_SITE_URL` to the pro
 
 ## Scripts
 - `npm run dev` / `npm run build` / `npm start`
-- `npm test` runs counting, anti-cheat and progress tests (Vitest).
+- `npm test` runs counting, anti-cheat, progress and formatting tests (Vitest).
 - `npm run typecheck`
 
 ## Pages
 | Path | What |
 |---|---|
 | `/` | Sign in |
-| `/dashboard` | Your active session, progress ring, per-goal bars, wpm graph |
-| `/connect` | Pick a doc, set word/sentence goals and an optional deadline |
-| `/lobby` | Live grid of friends' progress, unlock toasts and notifications |
-| `/friends` | Invite link, friend list, Discord ID |
+| `/dashboard` | Your active session (or the new-session form when there isn't one) |
+| `/connect` | "New session": pick a doc, goal and deadline presets |
+| `/lobby` | Friends' progress sorted by status, ready-to-play banner, pings |
+| `/friends` | Invite link (copy, share, reset), friend list, Discord |
 | `/invite/[code]` | Accepting an invite makes you mutual friends |
 
 ## Known limits
@@ -82,4 +91,4 @@ Push to Vercel, add the same env vars, and set `NEXT_PUBLIC_SITE_URL` to the pro
 - To find "words added", the server stores word *frequencies* (not text) from the session start. Friends never see them.
 
 ## Later
-Streaks, a weekly leaderboard, squad mode (unlock only when everyone's done), and a Chrome extension.
+A weekly leaderboard, squad mode (unlock only when everyone's done), and a Chrome extension.

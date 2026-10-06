@@ -14,15 +14,15 @@ export type LobbyRow = {
   goal_sentences: number | null;
   percent: number;
   status: Status;
-  flags: Flag[];
+  streak: number;
   deadline: string | null;
   started_at: string | null;
   unlocked_at: string | null;
+  last_unlocked_at: string | null;
   updated_at: string;
 };
 
-export const FLAG_LABEL: Record<Flag, string> = {
-  pasted: "pasted?",
-  repetitive: "repetitive",
-  lorem: "lorem ipsum",
+export const FLAG_NOTE: Record<Flag, string> = {
+  repetitive: "A lot of repeated words lately. Friends don't see this.",
+  lorem: "That looks like lorem ipsum. Friends don't see this.",
 };

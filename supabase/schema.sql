@@ -118,3 +118,10 @@ begin
     alter publication supabase_realtime add table lobby_status;
   end if;
 end $$;
+
+-- v2: Discord connect, per-user ping channel, streaks, pings. Safe to re-run.
+alter table users add column if not exists discord_username text;
+alter table users add column if not exists discord_webhook_url text;
+alter table lobby_status add column if not exists streak int not null default 0;
+alter table lobby_status add column if not exists last_unlocked_at timestamptz;
+alter table friendships add column if not exists last_pinged_at timestamptz;

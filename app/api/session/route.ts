@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
-import { errorResponse, needsToken, requireUser } from "@/lib/api";
+import { errorResponse, needsToken, requireUser, timeZoneOf } from "@/lib/api";
 import { endSession, getActiveSession, startSession, toView } from "@/lib/sessions";
 
-export async function GET() {
+export async function GET(req: Request) {
   const u = await requireUser();
   if ("error" in u) return u.error;
   try {
     const s = await getActiveSession(u.userId);
-    return NextResponse.json({ session: s ? await toView(s) : null });
+    const tz = timeZoneOf({ tz: new URL(req.url).searchParams.get("tz") });
+    return NextResponse.json({ session: s ? await toView(s, tz) : null });
   } catch (err) {
     return errorResponse(err);
   }
@@ -43,7 +44,7 @@ export async function POST(req: Request) {
       goalSentences,
       deadline,
     });
-    return NextResponse.json({ session: await toView(s) });
+    return NextResponse.json({ session: await toView(s, timeZoneOf(body)) });
   } catch (err) {
     return errorResponse(err);
   }

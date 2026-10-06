@@ -9,9 +9,15 @@ const prose =
   "by the window every evening hoping someone might walk up the road with good news";
 
 describe("isPaste", () => {
-  it("flags 300+ words in a normal poll", () => {
+  it("flags words that arrive faster than anyone types", () => {
     expect(isPaste(300, 45)).toBe(true);
-    expect(isPaste(120, 45)).toBe(false);
+    expect(isPaste(120, 45)).toBe(true);
+  });
+  it("allows fast honest typing in one check", () => {
+    expect(isPaste(60, 45)).toBe(false);
+  });
+  it("ignores small chunks", () => {
+    expect(isPaste(49, 5)).toBe(false);
   });
   it("scales with long gaps between polls", () => {
     expect(isPaste(500, 10 * 60)).toBe(false);
