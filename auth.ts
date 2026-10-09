@@ -1,6 +1,8 @@
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 import type {} from "next-auth/jwt";
+import { cookies } from "next/headers";
+import { AGE_OK_COOKIE, LEGAL } from "@/lib/legal";
 import { db } from "@/lib/supabase";
 
 // drive.file is non-sensitive: the app only sees docs the user picks in the Google Picker.
@@ -24,14 +26,34 @@ declare module "next-auth/jwt" {
   }
 }
 
-async function upsertUser(sub: string, email?: string | null, name?: string | null, avatar?: string | null) {
+async function upsertUser(
+  sub: string,
+  email: string | null | undefined,
+  name: string | null | undefined,
+  avatar: string | null | undefined,
+  acceptedTerms: boolean,
+) {
   const { data, error } = await db()
     .from("users")
-    .upsert({ google_sub: sub, email, name, avatar }, { onConflict: "google_sub" })
+    .upsert(
+      {
+        google_sub: sub,
+        email,
+        name,
+        avatar,
+        ...(acceptedTerms ? { terms_accepted_at: new Date().toISOString(), terms_version: LEGAL.version } : {}),
+      },
+      { onConflict: "google_sub" },
+    )
     .select("id")
     .single();
   if (error) throw error;
   return data.id as string;
+}
+
+/** True when this browser just answered the age question and agreed to the Terms. */
+async function passedAgeCheck() {
+  return (await cookies()).get(AGE_OK_COOKIE)?.value === LEGAL.version;
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
@@ -44,9 +66,27 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   ],
   pages: { signIn: "/" },
   callbacks: {
+    // No account without the age question first (COPPA: ask age before collecting anything).
+    // Returning users who already accepted the current Terms skip it.
+    async signIn({ account }) {
+      if (!account) return false;
+      if (await passedAgeCheck()) return true;
+      const { data } = await db()
+        .from("users")
+        .select("terms_version")
+        .eq("google_sub", account.providerAccountId)
+        .maybeSingle();
+      return data?.terms_version === LEGAL.version ? true : "/start";
+    },
     async jwt({ token, account, profile }) {
       if (account) {
-        token.uid = await upsertUser(account.providerAccountId, profile?.email, profile?.name, profile?.picture);
+        token.uid = await upsertUser(
+          account.providerAccountId,
+          profile?.email,
+          profile?.name,
+          profile?.picture,
+          await passedAgeCheck(),
+        );
         return {
           ...token,
           access_token: account.access_token,

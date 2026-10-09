@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Bricolage_Grotesque, Inter } from "next/font/google";
+import Footer from "@/components/Footer";
 import Nav from "@/components/Nav";
 import "./globals.css";
 
@@ -16,7 +17,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className={`${display.variable} ${body.variable}`}>
       <body className="min-h-screen">
         <Nav />
-        <main className="mx-auto max-w-5xl px-4 pt-6 pb-28 sm:pt-10 sm:pb-12">{children}</main>
+        <main className="mx-auto max-w-5xl px-4 pt-6 pb-12 sm:pt-10">{children}</main>
+        <Footer />
       </body>
     </html>
   );

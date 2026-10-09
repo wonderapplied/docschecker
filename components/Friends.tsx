@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
+import { deleteAccount } from "@/app/actions/account";
 import Avatar from "./Avatar";
 
 type Data = {
@@ -16,6 +17,7 @@ export default function Friends({ siteUrl, discordResult }: { siteUrl: string; d
   const [copied, setCopied] = useState(false);
   const [canShare, setCanShare] = useState(false);
   const [webhook, setWebhook] = useState("");
+  const [deleting, startDelete] = useTransition();
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(
     discordResult === "connected"
       ? { ok: true, text: "Discord connected." }
@@ -58,6 +60,11 @@ export default function Friends({ siteUrl, discordResult }: { siteUrl: string; d
     try {
       await navigator.share({ title: "Join my Unlocked lobby", text: "Join my lobby on Unlocked so we know when we're free to play.", url: link });
     } catch {}
+  }
+
+  function removeAccount() {
+    if (!confirm("Delete your Unlocked account? Your progress history, friends and settings are erased. This can't be undone.")) return;
+    startDelete(() => deleteAccount());
   }
 
   async function disconnect() {
@@ -187,6 +194,17 @@ export default function Friends({ siteUrl, discordResult }: { siteUrl: string; d
             share it.
           </p>
         </form>
+      </section>
+
+      <section className="card space-y-3">
+        <h2 className="font-display text-lg font-bold">Account</h2>
+        <p className="text-sm text-muted">
+          Deleting your account erases your sessions, progress history, friends and Discord settings, and removes Unlocked&apos;s access
+          to your Google account.
+        </p>
+        <button onClick={removeAccount} disabled={deleting} className="rounded-2xl border border-bad/40 px-4 py-2 text-sm font-semibold text-bad hover:bg-bad/10 disabled:opacity-50">
+          {deleting ? "Deleting…" : "Delete account"}
+        </button>
       </section>
     </div>
   );

@@ -125,3 +125,7 @@ alter table users add column if not exists discord_webhook_url text;
 alter table lobby_status add column if not exists streak int not null default 0;
 alter table lobby_status add column if not exists last_unlocked_at timestamptz;
 alter table friendships add column if not exists last_pinged_at timestamptz;
+
+-- v3: Terms/Privacy acceptance (the age question happens before sign-in; no birth date is stored).
+alter table users add column if not exists terms_accepted_at timestamptz;
+alter table users add column if not exists terms_version text;

@@ -220,7 +220,8 @@ export async function startSession(userId: string, accessToken: string, input: S
 
   await db()
     .from("sessions")
-    .update({ ended_at: new Date().toISOString() })
+    // The word tally is only needed during a session; the Privacy Policy promises it goes when it ends.
+    .update({ ended_at: new Date().toISOString(), baseline_freq: {} })
     .eq("user_id", userId)
     .is("ended_at", null);
 
@@ -301,7 +302,8 @@ export async function pollSession(s: SessionRow, accessToken: string, timeZone =
 export async function endSession(userId: string) {
   await db()
     .from("sessions")
-    .update({ ended_at: new Date().toISOString() })
+    // The word tally is only needed during a session; the Privacy Policy promises it goes when it ends.
+    .update({ ended_at: new Date().toISOString(), baseline_freq: {} })
     .eq("user_id", userId)
     .is("ended_at", null);
   await db()

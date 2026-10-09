@@ -70,15 +70,33 @@ npm run dev
 ### 5. Deploy
 Push to Vercel, add the same env vars, and set `NEXT_PUBLIC_SITE_URL` to the production URL.
 
+## Legal and age check
+- `/privacy` and `/terms` read the operator name, contact email and governing state from
+  `NEXT_PUBLIC_OPERATOR_NAME`, `NEXT_PUBLIC_CONTACT_EMAIL` and `NEXT_PUBLIC_GOVERNING_STATE`.
+  They show `[BRACKETS]` until those are set. Every page links to both in the footer, which Google's
+  OAuth review needs.
+- Sign-in starts at `/start`: a neutral birth month/year question plus agreeing to the Terms,
+  asked *before* Google sign-in so nothing is collected from under-13s. Under 13 sets a 30-day
+  block cookie and stores nothing. The birth date is never stored; only `terms_accepted_at` and
+  `terms_version` are.
+- Bump `LEGAL.version` in `lib/legal.ts` when the Terms or Privacy Policy change materially;
+  everyone is asked to agree again on their next page load.
+- Friends → Account → Delete account removes the user (everything else cascades) and revokes
+  the Google grant.
+- The policy promises the session word tally is deleted when a session ends; `endSession` and
+  `startSession` clear `baseline_freq`.
+
 ## Scripts
 - `npm run dev` / `npm run build` / `npm start`
-- `npm test` runs counting, anti-cheat, progress and formatting tests (Vitest).
+- `npm test` runs counting, anti-cheat, progress, formatting and age tests (Vitest).
 - `npm run typecheck`
 
 ## Pages
 | Path | What |
 |---|---|
-| `/` | Sign in |
+| `/` | Landing |
+| `/start` | Age question + agree to Terms, then Google sign-in |
+| `/privacy`, `/terms` | Privacy Policy and Terms of Service |
 | `/dashboard` | Your active session (or the new-session form when there isn't one) |
 | `/connect` | "New session": pick a doc, goal and deadline presets |
 | `/lobby` | Friends' progress sorted by status, ready-to-play banner, pings |
